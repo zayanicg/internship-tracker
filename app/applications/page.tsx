@@ -1,93 +1,110 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type Application = {
-
   id: string;
   company: string;
   role: string;
   status: string;
   notes: string;
-
 };
 
-export default function ApplicationsPage() {
+const quotes = [
+  "Shoot for the stars — progress still counts.",
+  "Every application is a step forward.",
+  "Growth takes time. Keep going.",
+  "You’re building momentum.",
+];
 
+export default function ApplicationsPage() {
+  const [applications, setApplications] = useState<Application[]>([]);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("Applied");
   const [notes, setNotes] = useState("");
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [quote, setQuote] = useState("");
 
-  // get applications when the page loads
+  // ⭐ Pick a random quote on load
   useEffect(() => {
+    setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     fetchApplications();
   }, []);
 
-  async function fetchApplications() {
-
+  // ✅ GET applications
+  const fetchApplications = async () => {
     const res = await fetch("/api/applications");
     const data = await res.json();
     setApplications(data);
-  }
+  };
 
-  async function handleSubmit(e: React.FormEvent) {
+  // ✅ POST application
+  const addApplication = async (e: React.FormEvent) => {
     e.preventDefault();
 
     await fetch("/api/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ company, role, status, notes }),
-      });
-      
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company,
+        role,
+        status,
+        notes,
+      }),
+    });
 
     setCompany("");
     setRole("");
-    setNotes("");
     setStatus("Applied");
+    setNotes("");
 
     fetchApplications();
-  }
+  };
 
-  async function handleDelete(id: string) {
-
+  // ✅ DELETE application
+  const deleteApplication = async (id: string) => {
     await fetch(`/api/applications?id=${id}`, {
       method: "DELETE",
     });
 
     fetchApplications();
-  }
+  };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold">🌿 Internship Growth Tracker</h1>
-      <p className="text-gray-600 mt-2">
-        Track your applications and grow your career one step at a time.
-      </p>
+    <div className="p-8 max-w-5xl mx-auto space-y-8">
+      {/* 🌙 Header */}
+      <div>
+        <h1 className="text-3xl font-bold">
+          🌙 Internship Orbit Tracker
+        </h1>
+        <p className="text-gray-600 mt-1">{quote}</p>
+      </div>
 
-      {/* FORM */}
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Add New Application</h2>
+      {/* 📝 Form */}
+      <form
+        onSubmit={addApplication}
+        className="bg-white rounded-xl shadow p-6 space-y-4"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            className="border rounded p-2"
+            placeholder="Company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            required
+          />
 
-        <input
-          className="border p-2 w-full mb-2"
-          placeholder="Company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-        />
-
-        <input
-          className="border p-2 w-full mb-2"
-          placeholder="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        />
+          <input
+            className="border rounded p-2"
+            placeholder="Role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            required
+          />
+        </div>
 
         <select
-          className="border p-2 w-full mb-2"
+          className="border rounded p-2 w-full"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -98,39 +115,46 @@ export default function ApplicationsPage() {
         </select>
 
         <textarea
-          className="border p-2 w-full mb-2"
-          placeholder="Notes"
+          className="border rounded p-2 w-full"
+          placeholder="Notes (optional)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
 
-        <button className="bg-green-700 text-white px-4 py-2 rounded">
-          Submit Application
+        <button
+          type="submit"
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+        >
+          Add Application
         </button>
       </form>
 
-      {/* APPLICATION LIST */}
-
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Your Applications</h2>
-
+      {/* 📋 Applications List */}
+      <div className="space-y-4">
         {applications.map((app) => (
-          <div key={app.id} className="bg-white p-4 mb-3 rounded shadow flex justify-between">
+          <div
+            key={app.id}
+            className="bg-white rounded-xl shadow p-4 flex justify-between items-start"
+          >
             <div>
-              <p className="font-bold">{app.company}</p>
-              <p className="text-sm text-gray-600">{app.role}</p>
-              <p className="text-sm">Status: {app.status}</p>
-              <p className="text-sm italic">{app.notes}</p>
+              <h2 className="font-semibold">
+                {app.company} — {app.role}
+              </h2>
+              <p className="text-sm text-gray-600">
+                Status: {app.status}
+              </p>
+              {app.notes && (
+                <p className="text-sm mt-1">{app.notes}</p>
+              )}
             </div>
 
             <button
-              onClick={() => handleDelete(app.id)}
-              className="text-red-500"
+              onClick={() => deleteApplication(app.id)}
+              className="text-sm text-red-500 hover:underline"
             >
               Delete
             </button>
           </div>
-
         ))}
       </div>
     </div>

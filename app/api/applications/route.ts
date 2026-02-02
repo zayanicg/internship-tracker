@@ -1,89 +1,77 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
-/**
- * GET /api/applications
- * Returns all internship applications, newest first
- */
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-
+//  GET: fetch all applications
 export async function GET() {
-  const response = await supabase
+  const { data, error } = await supabase
     .from("applications")
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (response.error) {
+  if (error) {
     return NextResponse.json(
-      { message: "Failed to fetch applications" },
+      { error: error.message },
       { status: 500 }
     );
   }
 
-  return NextResponse.json(response.data);
+  return NextResponse.json(data);
 }
 
-/**
- * POST /api/applications
- * Creates a new internship application
- */
+//  POST: add new application
+export async function POST(request: Request) {
+  const body = await request.json();
 
+  const { company, role, status, notes } = body;
 
-export async function POST(req: Request) {
-  const payload = await req.json();
+  const { error } = await supabase.from("applications").insert([
+    {
+      company,
+      role,
+      status,
+      notes,
+    },
+  ]);
 
-  const { company, role, status, notes } = payload;
-
-  const response = await supabase.from("applications").insert({
-    company,
-    role,
-    status,
-    notes,
-  });
-
-  if (response.error) {
+  if (error) {
     return NextResponse.json(
-      { message: "Failed to create application" },
+      { error: error.message },
       { status: 500 }
     );
   }
 
-  return NextResponse.json(
-    { message: "Application created successfully" },
-    { status: 201 }
-  );
+  return NextResponse.json({ success: true });
 }
 
-/**
- * DELETE /api/applications
- * Deletes an application by ID
- */
-
-
-export async function DELETE(req: Request) {
-  const { id } = await req.json();
+// DELETE: remove application
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
 
   if (!id) {
     return NextResponse.json(
-      { message: "Application ID is required" },
+      { error: "Missing id" },
       { status: 400 }
     );
   }
 
-  const response = await supabase
+  const { error } = await supabase
     .from("applications")
     .delete()
     .eq("id", id);
 
-  if (response.error) {
+  if (error) {
     return NextResponse.json(
-      { message: "Failed to delete application" },
+      { error: error.message },
       { status: 500 }
     );
   }
 
-  return NextResponse.json(
-    { message: "Application deleted successfully" },
-    { status: 200 }
-  );
+  // IMPORTANT: return JSON so frontend doesn’t crash
+  return NextResponse.json({ success: true });
 }
