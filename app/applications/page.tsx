@@ -25,32 +25,24 @@ export default function ApplicationsPage() {
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState("");
 
-  // ⭐ Pick a random quote on load
   useEffect(() => {
     setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     fetchApplications();
   }, []);
 
-  // ✅ GET applications
   const fetchApplications = async () => {
     const res = await fetch("/api/applications");
     const data = await res.json();
     setApplications(data);
   };
 
-  // ✅ POST application
   const addApplication = async (e: React.FormEvent) => {
     e.preventDefault();
 
     await fetch("/api/applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        company,
-        role,
-        status,
-        notes,
-      }),
+      body: JSON.stringify({ company, role, status, notes }),
     });
 
     setCompany("");
@@ -61,101 +53,118 @@ export default function ApplicationsPage() {
     fetchApplications();
   };
 
-  // ✅ DELETE application
   const deleteApplication = async (id: string) => {
-    await fetch(`/api/applications?id=${id}`, {
-      method: "DELETE",
-    });
-
+    await fetch(`/api/applications?id=${id}`, { method: "DELETE" });
     fetchApplications();
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* 🌙 Header */}
-      <div>
-        <h1 className="text-3xl font-bold">
-          🌙 Internship Orbit Tracker
-        </h1>
-        <p className="text-gray-600 mt-1">{quote}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100 p-8">
+      <div className="max-w-6xl mx-auto space-y-10">
 
-      {/* 📝 Form */}
-      <form
-        onSubmit={addApplication}
-        className="bg-white rounded-xl shadow p-6 space-y-4"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            className="border rounded p-2"
-            placeholder="Company"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            required
-          />
+        {/* 🌙 Header */}
+        <header className="space-y-1">
+          <h1 className="text-4xl font-semibold flex items-center gap-2">
+            🌙 Internship Orbit Tracker
+          </h1>
+          <p className="text-slate-400 italic">{quote}</p>
+        </header>
 
-          <input
-            className="border rounded p-2"
-            placeholder="Role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            required
-          />
-        </div>
+        {/* 📝 Add Application */}
+        <section className="bg-white text-slate-900 rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Add New Application</h2>
 
-        <select
-          className="border rounded p-2 w-full"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option>Applied</option>
-          <option>Interviewing</option>
-          <option>Rejected</option>
-          <option>Offer</option>
-        </select>
+          <form onSubmit={addApplication} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                className="border rounded-lg p-3"
+                placeholder="Company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                required
+              />
 
-        <textarea
-          className="border rounded p-2 w-full"
-          placeholder="Notes (optional)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-
-        <button
-          type="submit"
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-        >
-          Add Application
-        </button>
-      </form>
-
-      {/* 📋 Applications List */}
-      <div className="space-y-4">
-        {applications.map((app) => (
-          <div
-            key={app.id}
-            className="bg-white rounded-xl shadow p-4 flex justify-between items-start"
-          >
-            <div>
-              <h2 className="font-semibold">
-                {app.company} — {app.role}
-              </h2>
-              <p className="text-sm text-gray-600">
-                Status: {app.status}
-              </p>
-              {app.notes && (
-                <p className="text-sm mt-1">{app.notes}</p>
-              )}
+              <input
+                className="border rounded-lg p-3"
+                placeholder="Role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                required
+              />
             </div>
 
-            <button
-              onClick={() => deleteApplication(app.id)}
-              className="text-sm text-red-500 hover:underline"
+            <select
+              className="border rounded-lg p-3 w-full"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
             >
-              Delete
+              <option>Applied</option>
+              <option>Interviewing</option>
+              <option>Rejected</option>
+              <option>Offer</option>
+            </select>
+
+            <textarea
+              className="border rounded-lg p-3 w-full"
+              placeholder="Notes (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition"
+            >
+              Add Application
             </button>
+          </form>
+        </section>
+
+        {/* 📋 Applications */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold">
+            Your Applications ({applications.length})
+          </h2>
+
+          {applications.length === 0 && (
+            <p className="text-slate-400">
+              No applications yet — your journey starts with one ✨
+            </p>
+          )}
+
+          <div className="grid gap-4">
+            {applications.map((app) => (
+              <div
+                key={app.id}
+                className="bg-white text-slate-900 rounded-2xl shadow p-5 flex justify-between"
+              >
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg">
+                    {app.company} — {app.role}
+                  </h3>
+
+                  <span className="inline-block text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-600">
+                    {app.status}
+                  </span>
+
+                  {app.notes && (
+                    <p className="text-sm text-slate-600 mt-2">
+                      {app.notes}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => deleteApplication(app.id)}
+                  className="text-sm text-red-500 hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        </section>
+
       </div>
     </div>
   );
