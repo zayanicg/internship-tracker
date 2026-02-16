@@ -132,7 +132,7 @@ Repository: **[Add GitHub Link]**
 ## ⚙️ Run Locally
 
 ```bash
-git clone https://github.com/yourusername/internship-tracker.git
+git clone https://github.com/zayanicg/internship-tracker.git
 cd internship-tracker
 npm install
 npm run dev
@@ -174,21 +174,9 @@ lib/
 
 ---
 
-## 📸 Screenshots
+## 📸 App Screenshot
 
-> Store images in `docs/images/` (or similar) and update paths below.
-
-### Dashboard Overview
-
-<img src="docs/images/dashboard.png" width="800"/>
-
-### Status Chart
-
-<img src="docs/images/chart.png" width="800"/>
-
-### Reminder Calendar
-
-<img src="docs/images/calendar.png" width="800"/>
+<img src="docs/images/overview.png" width="900"/>
 
 ---
 
@@ -203,4 +191,9 @@ If you found this project useful or interesting, consider giving it a ⭐
 
 ## 👤 Author
 
-Portfolio full-stack project focused on dashboard architecture, data visualization, and production-style Next.js patterns.
+Built by Zayani Garcia, a full-stack developer focused on Next.js applications, data-driven dashboards, and clean UI architecture.
+
+GitHub: https://github.com/zayanicg
+Repository: https://github.com/zayanicg/internship-tracker
+Live App: https://internship-tracker-f2einuows-zcgs-projects-aab9afbe.vercel.app
+
