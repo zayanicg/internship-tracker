@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Legend, Tooltip } from "recharts";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 type Application = {
   id: string;
@@ -14,7 +16,7 @@ type Application = {
 type Task = {
   id: number;
   text: string;
-  done: boolean;
+  date: string;
 };
 
 const quotes = [
@@ -43,11 +45,21 @@ export default function ApplicationsPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskInput, setTaskInput] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     fetchApplications();
+
+    const savedTasks = localStorage.getItem("reminders");
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("reminders", JSON.stringify(tasks));
+  }, [tasks]);
 
   const fetchApplications = async () => {
     const res = await fetch("/api/applications");
@@ -57,11 +69,13 @@ export default function ApplicationsPage() {
 
   const addApplication = async (e: React.FormEvent) => {
     e.preventDefault();
+
     await fetch("/api/applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ company, role, status, notes }),
     });
+
     setCompany("");
     setRole("");
     setStatus("Applied");
@@ -74,22 +88,39 @@ export default function ApplicationsPage() {
     fetchApplications();
   };
 
-  // Task logic
   const addTask = () => {
     if (!taskInput.trim()) return;
-    setTasks([...tasks, { id: Date.now(), text: taskInput, done: false }]);
-    setTaskInput("");
-  };
 
-  const toggleTask = (id: number) => {
-    setTasks(tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
+    setTasks([
+      ...tasks,
+      {
+        id: Date.now(),
+        text: taskInput,
+        date: selectedDate.toDateString(),
+      },
+    ]);
+
+    setTaskInput("");
   };
 
   const deleteTask = (id: number) => {
     setTasks(tasks.filter(t => t.id !== id));
   };
 
-  // Prepare data for Recharts pie chart
+  const tasksForSelectedDate = tasks.filter(
+    t => t.date === selectedDate.toDateString()
+  );
+
+  const datesWithTasks = tasks.map(t =>
+    new Date(t.date).toDateString()
+  );
+
+  const tileClassName = ({ date, view }: any) => {
+    if (view === "month" && datesWithTasks.includes(date.toDateString())) {
+      return "has-reminder";
+    }
+  };
+
   const pieData = [
     { name: "Applied", value: applications.filter(a => a.status === "Applied").length },
     { name: "Interviewing", value: applications.filter(a => a.status === "Interviewing").length },
@@ -97,44 +128,69 @@ export default function ApplicationsPage() {
     { name: "Offer", value: applications.filter(a => a.status === "Offer").length },
   ];
 
+  const calendarStyles = `
+    .react-calendar {
+      border: none;
+      font-family: inherit;
+    }
+    .react-calendar__tile--active {
+      background: #6366f1 !important;
+      color: white !important;
+    }
+    .react-calendar__tile--now {
+      background: #e0e7ff !important;
+      color: #2a2a2a !important;
+    }
+    .react-calendar__tile.has-reminder {
+      background: #fce7f3 !important;
+      color: #9d174d !important;
+      border-radius: 0.75rem;
+      font-weight: 500;
+    }
+  `;
+
   return (
     <div className="min-h-screen bg-[#f6f7fb] text-[#2a2a2a] p-10">
+      <style>{calendarStyles}</style>
+
       <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* HEADER */}
-        <header className="text-center space-y-2">
+        <header className="text-center">
           <h1 className="text-4xl font-medium tracking-tight text-gray-800">
             Internship Tracker
           </h1>
-          <p className="text-gray-500 italic">{quote}</p>
         </header>
 
-        {/* GRID LAYOUT */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-          {/* TOP LEFT - Add Application */}
-          <div className="space-y-8">
-            <section className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-              <h2 className="font-semibold text-lg mb-3">Add Application</h2>
+          {/* LEFT COLUMN */}
+          <div className="space-y-6">
+
+            {/* ADD APPLICATION */}
+            <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+              <h2 className="font-semibold text-lg mb-3">
+                Add Application
+              </h2>
+
               <form onSubmit={addApplication} className="space-y-3">
                 <input
                   className="w-full p-2 border rounded-lg"
                   placeholder="Company"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={e => setCompany(e.target.value)}
                   required
                 />
                 <input
                   className="w-full p-2 border rounded-lg"
                   placeholder="Role"
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  onChange={e => setRole(e.target.value)}
                   required
                 />
                 <select
                   className="w-full p-2 border rounded-lg"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  onChange={e => setStatus(e.target.value)}
                 >
                   <option>Applied</option>
                   <option>Interviewing</option>
@@ -145,103 +201,156 @@ export default function ApplicationsPage() {
                   className="w-full p-2 border rounded-lg"
                   placeholder="Notes"
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={e => setNotes(e.target.value)}
                 />
                 <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition">
                   Add
                 </button>
               </form>
             </section>
-          </div>
 
-          {/* TOP RIGHT - Applications List */}
-          <div className="space-y-8">
-            <section className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-              <h2 className="font-semibold text-lg mb-4">
-                Applications ({applications.length})
+            {/* QUOTE (LEFT SIDE GAP FILLED) */}
+            <div className="text-center">
+              <p className="text-gray-500 italic text-sm">
+                {quote}
+              </p>
+            </div>
+
+            {/* REMINDERS */}
+            <section className="bg-gray-50 p-6 rounded-2xl shadow-md border border-slate-100">
+              <h2 className="font-semibold text-lg mb-2">
+                Reminders
               </h2>
-              <div className="space-y-3">
-                {applications.map(app => (
-                  <div key={app.id} className="border rounded-lg p-3 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{app.company} — {app.role}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[app.status]}`}>
-                        {app.status}
-                      </span>
-                    </div>
-                    <button onClick={() => deleteApplication(app.id)} className="text-sm text-red-600">
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
 
-          {/* BOTTOM LEFT - Task List */}
-          <div className="space-y-8">
-            <section className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-              <h2 className="font-semibold text-lg mb-3">Tasks</h2>
+              <div className="mb-4 flex justify-center">
+                <Calendar
+                  onChange={(value) => setSelectedDate(value as Date)}
+                  value={selectedDate}
+                  tileClassName={tileClassName}
+                  className="rounded-xl border-none"
+                />
+              </div>
+
+              <p className="text-sm text-gray-500 mb-2">
+                Reminders for {selectedDate.toDateString()}
+              </p>
+
               <div className="flex gap-2 mb-3">
                 <input
                   className="flex-1 p-2 border rounded-lg"
-                  placeholder="New task..."
+                  placeholder="New reminder..."
                   value={taskInput}
-                  onChange={(e) => setTaskInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addTask()}
+                  onChange={e => setTaskInput(e.target.value)}
                 />
-                <button onClick={addTask} className="bg-indigo-500 text-white px-3 rounded-lg hover:bg-indigo-600 transition">
+                <button
+                  onClick={addTask}
+                  className="bg-indigo-500 text-white px-3 rounded-lg"
+                >
                   Add
                 </button>
               </div>
-              <ul className="space-y-2">
-                {tasks.map(task => (
-                  <li key={task.id} className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={task.done}
-                        onChange={() => toggleTask(task.id)}
-                        className="w-4 h-4 accent-indigo-500"
-                      />
-                      <span className={task.done ? "line-through text-gray-400" : ""}>
-                        {task.text}
-                      </span>
-                    </label>
-                    <button onClick={() => deleteTask(task.id)} className="text-red-600 text-sm">
+
+              <ul className="space-y-2 mt-4">
+                {tasksForSelectedDate.length === 0 && (
+                  <p className="text-sm text-gray-400 italic">
+                    No reminders for this day
+                  </p>
+                )}
+
+                {tasksForSelectedDate.map(task => (
+                  <li
+                    key={task.id}
+                    className="flex justify-between items-center bg-pink-50 border border-pink-100 px-3 py-2 rounded-lg text-sm text-pink-700"
+                  >
+                    <span>{task.text}</span>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="text-xs text-pink-500 hover:text-pink-700"
+                    >
                       Delete
                     </button>
                   </li>
                 ))}
               </ul>
             </section>
+
           </div>
 
-          {/* BOTTOM RIGHT - Pie Chart */}
-          <div className="flex items-center justify-center">
-            {applications.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
-               <PieChart width={250} height={250}>
-  <Pie
-    data={pieData}
-    dataKey="value"
-    nameKey="name"
-    cx="50%"
-    cy="50%"
-    outerRadius={100}
-    // Remove the label prop
-    // label
-  >
-    {pieData.map((entry, index) => (
-      <Cell key={`cell-${index}`} fill={COLORS[index]} />
-    ))}
-  </Pie>
-  <Tooltip />   {/* This shows number on hover */}
-  <Legend verticalAlign="bottom" height={36} />
-</PieChart>
+          {/* RIGHT COLUMN (UNCHANGED) */}
+          <div className="space-y-8">
 
+            {/* APPLICATION LIST */}
+            <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+              <h2 className="font-semibold text-lg mb-4">
+                Applications ({applications.length})
+              </h2>
+
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {applications.map(app => (
+                  <div
+                    key={app.id}
+                    className="border rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    <div className="flex justify-between items-start">
+
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-800">
+                          {app.company}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {app.role}
+                        </p>
+                        {app.notes && (
+                          <p className="text-xs italic text-gray-400 mt-1">
+                            {app.notes}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${statusColors[app.status]}`}
+                        >
+                          {app.status}
+                        </span>
+
+                        <button
+                          onClick={() => deleteApplication(app.id)}
+                          className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-300 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </section>
+
+            {/* PIE CHART */}
+            <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 flex flex-col items-center">
+              <h3 className="text-center font-semibold mb-4">
+                Application Status Overview
+              </h3>
+
+              <PieChart width={320} height={300}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                >
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </section>
+
           </div>
 
         </div>
