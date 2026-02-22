@@ -48,6 +48,41 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true });
 }
 
+//  PUT: update application  ✅ ADDED
+export async function PUT(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Missing id" },
+      { status: 400 }
+    );
+  }
+
+  const body = await request.json();
+  const { company, role, status, notes } = body;
+
+  const { error } = await supabase
+    .from("applications")
+    .update({
+      company,
+      role,
+      status,
+      notes,
+    })
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 // DELETE: remove application
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -72,6 +107,5 @@ export async function DELETE(request: Request) {
     );
   }
 
-  // IMPORTANT: return JSON so frontend doesn’t crash
   return NextResponse.json({ success: true });
 }

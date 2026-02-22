@@ -42,6 +42,7 @@ export default function ApplicationsPage() {
   const [status, setStatus] = useState("Applied");
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskInput, setTaskInput] = useState("");
@@ -70,11 +71,20 @@ export default function ApplicationsPage() {
   const addApplication = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await fetch("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ company, role, status, notes }),
-    });
+    if (editingId) {
+      await fetch(`/api/applications?id=${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company, role, status, notes }),
+      });
+      setEditingId(null);
+    } else {
+      await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company, role, status, notes }),
+      });
+    }
 
     setCompany("");
     setRole("");
@@ -86,6 +96,14 @@ export default function ApplicationsPage() {
   const deleteApplication = async (id: string) => {
     await fetch(`/api/applications?id=${id}`, { method: "DELETE" });
     fetchApplications();
+  };
+
+  const editApplication = (app: Application) => {
+    setCompany(app.company);
+    setRole(app.role);
+    setStatus(app.status);
+    setNotes(app.notes);
+    setEditingId(app.id);
   };
 
   const addTask = () => {
@@ -104,14 +122,14 @@ export default function ApplicationsPage() {
   };
 
   const deleteTask = (id: number) => {
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks(tasks.filter((t) => t.id !== id));
   };
 
   const tasksForSelectedDate = tasks.filter(
-    t => t.date === selectedDate.toDateString()
+    (t) => t.date === selectedDate.toDateString()
   );
 
-  const datesWithTasks = tasks.map(t =>
+  const datesWithTasks = tasks.map((t) =>
     new Date(t.date).toDateString()
   );
 
@@ -129,18 +147,9 @@ export default function ApplicationsPage() {
   ];
 
   const calendarStyles = `
-    .react-calendar {
-      border: none;
-      font-family: inherit;
-    }
-    .react-calendar__tile--active {
-      background: #6366f1 !important;
-      color: white !important;
-    }
-    .react-calendar__tile--now {
-      background: #e0e7ff !important;
-      color: #2a2a2a !important;
-    }
+    .react-calendar { border: none; font-family: inherit; }
+    .react-calendar__tile--active { background: #6366f1 !important; color: white !important; }
+    .react-calendar__tile--now { background: #e0e7ff !important; color: #2a2a2a !important; }
     .react-calendar__tile.has-reminder {
       background: #fce7f3 !important;
       color: #9d174d !important;
@@ -166,7 +175,6 @@ export default function ApplicationsPage() {
           {/* LEFT COLUMN */}
           <div className="space-y-6">
 
-            {/* ADD APPLICATION */}
             <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
               <h2 className="font-semibold text-lg mb-3">
                 Add Application
@@ -204,23 +212,18 @@ export default function ApplicationsPage() {
                   onChange={e => setNotes(e.target.value)}
                 />
                 <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition">
-                  Add
+                  {editingId ? "Update" : "Add"}
                 </button>
               </form>
             </section>
 
-            {/* QUOTE (LEFT SIDE GAP FILLED) */}
             <div className="text-center">
-              <p className="text-gray-500 italic text-sm">
-                {quote}
-              </p>
+              <p className="text-gray-500 italic text-sm">{quote}</p>
             </div>
 
             {/* REMINDERS */}
             <section className="bg-gray-50 p-6 rounded-2xl shadow-md border border-slate-100">
-              <h2 className="font-semibold text-lg mb-2">
-                Reminders
-              </h2>
+              <h2 className="font-semibold text-lg mb-2">Reminders</h2>
 
               <div className="mb-4 flex justify-center">
                 <Calendar
@@ -273,13 +276,11 @@ export default function ApplicationsPage() {
                 ))}
               </ul>
             </section>
-
           </div>
 
-          {/* RIGHT COLUMN (UNCHANGED) */}
+          {/* RIGHT COLUMN */}
           <div className="space-y-8">
 
-            {/* APPLICATION LIST */}
             <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
               <h2 className="font-semibold text-lg mb-4">
                 Applications ({applications.length})
@@ -315,6 +316,13 @@ export default function ApplicationsPage() {
                         </span>
 
                         <button
+                          onClick={() => editApplication(app)}
+                          className="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 transition"
+                        >
+                          Edit
+                        </button>
+
+                        <button
                           onClick={() => deleteApplication(app.id)}
                           className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-300 transition"
                         >
@@ -328,7 +336,6 @@ export default function ApplicationsPage() {
               </div>
             </section>
 
-            {/* PIE CHART */}
             <section className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 flex flex-col items-center">
               <h3 className="text-center font-semibold mb-4">
                 Application Status Overview
@@ -352,7 +359,6 @@ export default function ApplicationsPage() {
             </section>
 
           </div>
-
         </div>
       </div>
     </div>
